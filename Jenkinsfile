@@ -43,11 +43,9 @@ pipeline {
         
         stage('Deploy to Azure') {
             steps {
-                withCredentials([string(credentialsId: 'azure-publish-password', variable: 'AZURE_PASS')]) {
-                    bat """
-                        powershell Compress-Archive -Path * -DestinationPath deploy.zip -Force
-                        curl -X POST -u "$bem-webservice:${AZURE_PASS}" --data-binary @deploy.zip https://bem-webservice.scm.azurewebsites.net/api/zipdeploy
-                    """
+                withCredentials([usernamePassword(credentialsId: 'azure-publish-creds', usernameVariable: 'AZURE_USER', passwordVariable: 'AZURE_PASS')]) {
+                    bat 'powershell Compress-Archive -Path * -DestinationPath deploy.zip -Force'
+                    bat 'curl -X POST -u %AZURE_USER%:%AZURE_PASS% --data-binary @deploy.zip https://bem-webservice.scm.azurewebsites.net/api/zipdeploy'
                 }
             }
         }

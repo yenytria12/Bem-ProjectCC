@@ -1,0 +1,141 @@
+# Implementation Plan
+
+- [x] 1. Setup Database dan Models
+  - [x] 1.1 Create migration for kas_settings table
+    - Fields: nominal, deadline_day, penalty_per_day, reminder_days_before, is_active
+    - _Requirements: 3.1, 3.2_
+  - [x] 1.2 Create migration for kas_payments table
+    - Fields: user_id, period_month, period_year, amount, penalty, total_amount, status, payment_method, midtrans_order_id, midtrans_transaction_id, paid_at, processed_by, notes
+    - Add unique constraint on user_id + period_month + period_year
+    - _Requirements: 1.4, 1.5_
+  - [x] 1.3 Create KasSetting model with fillable and casts
+    - _Requirements: 3.1, 3.2_
+  - [x] 1.4 Create KasPayment model with relationships and fillable
+    - Relationships: user, processor (processed_by)
+    - _Requirements: 1.4, 4.1, 4.2_
+  - [x] 1.5 Write property test for duplicate payment prevention
+    - **Property 2: No Duplicate Payment Per Period**
+    - **Validates: Requirements 1.5**
+  - [x] 1.6 Write property test for total amount calculation
+    - **Property 4: Total Amount Calculation**
+    - **Validates: Requirements 5.5**
+
+- [x] 2. Implement KasService
+  - [x] 2.1 Create KasService class with penalty calculation logic
+    - Method: calculatePenalty(KasPayment $payment): int
+    - Method: getTotalAmount(KasPayment $payment): int
+    - _Requirements: 5.4, 5.5_
+  - [x] 2.2 Write property test for penalty calculation
+    - **Property 1: Penalty Calculation Consistency**
+    - **Validates: Requirements 5.4, 5.5**
+  - [x] 2.3 Implement generateMonthlyPayments method
+    - Create KasPayment for all active users for new month
+    - Use configured nominal from KasSetting
+    - _Requirements: 5.2, 5.3_
+  - [x] 2.4 Write property test for monthly payment generation
+    - **Property 6: Monthly Payment Generation Completeness**
+    - **Validates: Requirements 5.2**
+  - [x] 2.5 Implement markAsOverdue method
+    - Update status to 'overdue' for unpaid payments past deadline
+    - _Requirements: 5.1_
+  - [x] 2.6 Implement recordManualPayment method
+    - Update payment status, set processed_by and notes
+    - _Requirements: 6.1, 6.2, 6.3_
+  - [x] 2.7 Write property test for manual payment audit trail
+    - **Property 5: Manual Payment Audit Trail**
+    - **Validates: Requirements 6.2, 6.3**
+
+- [x] 3. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 4. Implement Midtrans Integration
+  - [x] 4.1 Install Midtrans PHP SDK via composer
+    - Add midtrans/midtrans-php to composer.json
+    - _Requirements: 1.2_
+  - [x] 4.2 Create config/midtrans.php configuration file
+    - Store merchant_id, client_key, server_key from env
+    - _Requirements: 1.2_
+  - [x] 4.3 Create MidtransService class
+    - Method: createTransaction(KasPayment $payment): array
+    - Method: handleCallback(array $payload): bool
+    - Method: getTransactionStatus(string $orderId): array
+    - _Requirements: 1.2, 1.3_
+  - [x] 4.4 Write property test for payment status transition
+    - **Property 3: Payment Status Transition Validity**
+    - **Validates: Requirements 1.3, 1.4, 5.1**
+
+- [x] 5. Create API Endpoints
+  - [x] 5.1 Create KasController with pay method
+    - POST /api/kas/pay - initiate Midtrans payment
+    - Return snap token for frontend
+    - _Requirements: 1.1, 1.2_
+  - [x] 5.2 Create callback endpoint for Midtrans webhook
+    - POST /api/kas/callback - handle payment notification
+    - Verify signature, update payment status
+    - _Requirements: 1.3_
+  - [x] 5.3 Create history and current status endpoints
+    - GET /api/kas/history - user's payment history
+    - GET /api/kas/current - current month status
+    - _Requirements: 4.1, 4.2, 1.1_
+  - [x] 5.4 Register routes in routes/api.php
+    - _Requirements: 1.1, 1.2, 1.3, 4.1_
+
+- [x] 6. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 7. Create Filament Resources
+  - [x] 7.1 Create KasSettingResource for Bendahara
+    - Form: nominal, deadline_day, penalty_per_day, reminder_days_before
+    - Restrict access to Bendahara role
+    - _Requirements: 3.1, 3.2, 3.3_
+  - [x] 7.2 Create KasPaymentResource
+    - Table: user name, ministry, period, amount, penalty, total, status, paid_at
+    - Filters: status, ministry, period
+    - Bendahara sees all, Anggota sees own
+    - _Requirements: 2.1, 2.2, 2.3, 2.4_
+  - [x] 7.3 Add manual payment action for Bendahara
+    - Modal form with notes field
+    - Update status and processed_by
+    - _Requirements: 6.1, 6.2, 6.3_
+  - [x] 7.4 Add export action for payment report
+    - Export to CSV/Excel
+    - _Requirements: 2.5_
+
+- [x] 8. Create Dashboard Widget
+  - [x] 8.1 Create KasSummaryWidget for Filament dashboard
+    - Show total collected, percentage paid, pending count
+    - _Requirements: 7.1, 7.2_
+  - [x] 8.2 Add date range filter for summary
+    - Calculate totals for selected period
+    - _Requirements: 7.3_
+
+- [x] 9. Implement Scheduler Commands
+  - [x] 9.1 Create GenerateMonthlyKasCommand
+    - Artisan command to generate monthly payments
+    - Schedule to run on 1st of each month
+    - _Requirements: 5.2, 5.3_
+  - [x] 9.2 Create MarkOverdueKasCommand
+    - Artisan command to mark overdue payments
+    - Schedule to run daily after 25th
+    - _Requirements: 5.1_
+  - [x] 9.3 Create SendKasReminderCommand
+    - Artisan command to send reminders
+    - Schedule to run on 18th of each month
+    - _Requirements: 8.1, 8.2, 8.3_
+  - [x] 9.4 Register commands in Console Kernel scheduler
+    - _Requirements: 5.1, 5.2, 8.1_
+
+- [x] 10. Implement Notification Service
+  - [x] 10.1 Create KasReminderNotification class
+    - Include kas amount and deadline in notification
+    - _Requirements: 8.2_
+  - [x] 10.2 Create KasPaymentSuccessNotification class
+    - Confirm payment with transaction details
+    - _Requirements: 1.4_
+  - [x] 10.3 Integrate notifications with KasService
+    - Send reminder to unpaid users only
+    - Send success notification on payment
+    - _Requirements: 8.1, 8.3_
+
+- [x] 11. Final Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.

@@ -16,7 +16,7 @@ pipeline {
         
         stage('Install PHP Dependencies') {
             steps {
-                bat 'composer install --no-dev --optimize-autoloader --no-interaction'
+                bat 'composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs'
             }
         }
         

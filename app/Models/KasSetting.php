@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class KasSetting extends Model
 {
@@ -36,14 +37,46 @@ class KasSetting extends Model
         ];
     }
 
+    /**
+     * Get all payments related to this kas setting
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(KasPayment::class);
+    }
+
     protected static function booted(): void
     {
-        // Auto generate payments when setting is saved
+        // Auto generate or update payments when setting is saved
         static::saved(function (KasSetting $setting) {
             if ($setting->is_active) {
+                // Check if nominal was changed (only update unpaid payments)
+                if ($setting->wasChanged('nominal')) {
+                    $setting->updatePaymentsNominal();
+                }
                 $setting->generatePaymentsForPeriod();
             }
         });
+
+        // Delete related payments when setting is deleted
+        static::deleting(function (KasSetting $setting) {
+            // Delete all related payments (cascade delete via relationship)
+            $setting->payments()->delete();
+        });
+    }
+
+    /**
+     * Update nominal for unpaid payments when setting nominal changes
+     */
+    public function updatePaymentsNominal(): int
+    {
+        // Only update payments that are NOT paid
+        return $this->payments()
+            ->where('status', '!=', 'paid')
+            ->update([
+                'amount' => $this->nominal,
+                'total_amount' => \DB::raw($this->nominal . ' + penalty'),
+            ]);
     }
 
     /**
@@ -74,7 +107,7 @@ class KasSetting extends Model
         $users = User::whereDoesntHave('roles', function ($query) {
             $query->where('name', 'Super Admin');
         })->get();
-        
+
         $created = 0;
 
         // Loop through all months in the period
@@ -82,7 +115,7 @@ class KasSetting extends Model
         $endDate = \Carbon\Carbon::create($this->period_end_year, $this->period_end_month, 1);
 
         $currentDate = $startDate->copy();
-        
+
         while ($currentDate->lte($endDate)) {
             $month = $currentDate->month;
             $year = $currentDate->year;
@@ -97,6 +130,7 @@ class KasSetting extends Model
                 if (!$exists) {
                     KasPayment::create([
                         'user_id' => $user->id,
+                        'kas_setting_id' => $this->id,
                         'period_month' => $month,
                         'period_year' => $year,
                         'amount' => $this->nominal,

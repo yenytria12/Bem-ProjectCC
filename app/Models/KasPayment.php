@@ -12,6 +12,7 @@ class KasPayment extends Model
 
     protected $fillable = [
         'user_id',
+        'kas_setting_id',
         'period_month',
         'period_year',
         'amount',
@@ -44,6 +45,14 @@ class KasPayment extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Kas setting yang menjadi sumber tagihan ini
+     */
+    public function kasSetting(): BelongsTo
+    {
+        return $this->belongsTo(KasSetting::class);
     }
 
     /**
@@ -92,9 +101,18 @@ class KasPayment extends Model
     public function getPeriodLabelAttribute(): string
     {
         $months = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember'
         ];
         return $months[$this->period_month] . ' ' . $this->period_year;
     }

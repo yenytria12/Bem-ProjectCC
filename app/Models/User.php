@@ -13,11 +13,11 @@ use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
 // Perhatikan: implements nambah FilamentUser
-class User extends Authenticatable implements JWTSubject, FilamentUser 
+class User extends Authenticatable implements JWTSubject, FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles, HasApiTokens;
-    
+
     /**
      * Get the identifier that will be stored in the subject claim of the JWT.
      */
@@ -44,6 +44,8 @@ class User extends Authenticatable implements JWTSubject, FilamentUser
         'email',
         'password',
         'ministry_id',
+        'google_id',
+        'avatar',
     ];
 
     /**
@@ -69,15 +71,18 @@ class User extends Authenticatable implements JWTSubject, FilamentUser
         ];
     }
 
-    public function proposals(){
+    public function proposals()
+    {
         return $this->hasMany(Proposal::class);
     }
 
-    public function ministry(){
+    public function ministry()
+    {
         return $this->belongsTo(Ministry::class);
     }
 
-    public function programKerjas(){
+    public function programKerjas()
+    {
         return $this->hasMany(ProgramKerja::class);
     }
 

@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     environment {
-        AZURE_APP_NAME = 'bem-webservice'
+        AZURE_APP_NAME = 'bem-projectcc'
     }
     
     stages {
@@ -16,37 +16,39 @@ pipeline {
         
         stage('Install PHP Dependencies') {
             steps {
-                bat 'composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs'
+                sh 'composer install --no-dev --optimize-autoloader --no-interaction'
             }
         }
         
         stage('Install Node Dependencies') {
             steps {
-                bat 'npm ci'
-                bat 'npm run build'
+                sh 'npm ci'
+                sh 'npm run build'
             }
         }
         
-        stage('Setup Environment') {
+        stage('Prepare Deployment') {
             steps {
-                bat 'copy .env.example .env'
-                bat 'php artisan key:generate --force'
-            }
-        }
-        
-        stage('Run Tests') {
-            steps {
-                echo 'Skipping tests (PHPUnit not installed in production build)'
-                // bat 'php artisan test'
+                sh '''
+                    rm -rf node_modules
+                    rm -rf .git
+                    rm -rf tests
+                    rm -f deploy.zip
+                    zip -r deploy.zip . -x "*.git*" -x "node_modules/*" -x "tests/*"
+                '''
             }
         }
         
         stage('Deploy to Azure') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'azure-publish-creds', usernameVariable: 'AZURE_USER', passwordVariable: 'AZURE_PASS')]) {
-                    bat 'if exist deploy.zip del deploy.zip'
-                    bat 'tar -a -c -f deploy.zip --exclude=node_modules --exclude=.git --exclude=deploy.zip *'
-                    bat 'curl -X POST -u %AZURE_USER%:%AZURE_PASS% --data-binary @deploy.zip https://bem-webservice.scm.azurewebsites.net/api/zipdeploy'
+                    sh '''
+                        curl -X POST \
+                            -u "${AZURE_USER}:${AZURE_PASS}" \
+                            --data-binary @deploy.zip \
+                            "https://${AZURE_APP_NAME}.scm.azurewebsites.net/api/zipdeploy" \
+                            -H "Content-Type: application/zip"
+                    '''
                 }
             }
         }
@@ -58,6 +60,9 @@ pipeline {
         }
         failure {
             echo '❌ Deployment failed!'
+        }
+        always {
+            cleanWs()
         }
     }
 }

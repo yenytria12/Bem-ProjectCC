@@ -6,6 +6,9 @@ service nginx reload
 
 cd /home/site/wwwroot
 
+# Run package discovery (skipped during CI build)
+php artisan package:discover --ansi
+
 # Run migrations with seeding
 php artisan migrate --seed --force
 

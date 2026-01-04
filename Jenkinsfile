@@ -16,7 +16,7 @@ pipeline {
         
         stage('Install PHP Dependencies') {
             steps {
-                sh 'composer install --no-dev --optimize-autoloader --no-interaction'
+                sh 'COMPOSER_PROCESS_TIMEOUT=600 composer install --no-dev --optimize-autoloader --no-interaction --no-scripts'
             }
         }
         

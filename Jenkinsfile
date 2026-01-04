@@ -22,10 +22,8 @@ pipeline {
         
         stage('Install Node Dependencies') {
             steps {
-                echo 'Skipping npm - Filament assets already published by composer'
-                // VM B1s has limited RAM, and Filament assets are already published
-                // sh 'npm ci'
-                // sh 'npm run build'
+                sh 'npm ci'
+                sh 'npm run build'
             }
         }
         

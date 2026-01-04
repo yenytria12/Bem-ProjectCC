@@ -27,9 +27,9 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(\App\Filament\Pages\Auth\Login::class)
-            ->favicon(asset('images/U.png'))
+            ->favicon(asset('favicon.ico'))
             ->brandName('BEM TEL-U')
-            ->brandLogo(asset('images/TelU.png'))
+            ->brandLogo(asset('images/logo.png'))
             ->brandLogoHeight('2.5rem')
             ->darkMode()
             ->colors([

@@ -1,4 +1,9 @@
 #!/bin/bash
+
+# Copy nginx config to enable Laravel public folder
+cp /home/site/wwwroot/default /etc/nginx/sites-available/default
+service nginx reload
+
 cd /home/site/wwwroot
 
 # Run migrations with seeding

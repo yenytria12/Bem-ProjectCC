@@ -1,8 +1,8 @@
 #!/bin/bash
 cd /home/site/wwwroot
 
-# Run migrations
-php artisan migrate --force
+# Run migrations with seeding
+php artisan migrate --seed --force
 
 # Clear and cache config
 php artisan config:cache
